@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ultireps - Download Now</title>
+    <title>ultireps</title>
+    <link rel="icon" type="image/png" href="assets/images/favicon.png">
     <style>
         * {
             margin: 0;
@@ -27,6 +28,14 @@
         .container {
             max-width: 400px;
             width: 100%;
+        }
+
+        .app-icon {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 1rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         }
 
         .logo {
@@ -88,6 +97,11 @@
         }
 
         @media (max-width: 480px) {
+            .app-icon {
+                width: 60px;
+                height: 60px;
+            }
+
             .logo {
                 font-size: 2.5rem;
             }
@@ -100,6 +114,7 @@
 </head>
 <body>
     <div class="container">
+        <img src="assets/images/icon.png" alt="ultireps icon" class="app-icon">
         <div class="logo">ultireps</div>
         
         <div id="download-section">
