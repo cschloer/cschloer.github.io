@@ -520,6 +520,79 @@
         color: var(--color-text-muted);
       }
 
+      .question-hint {
+        font-size: 0.82rem;
+        color: var(--color-text-muted);
+        margin-top: 4px;
+        margin-bottom: 2px;
+      }
+
+      /* Path detail */
+      .path-toggle-wrap {
+        text-align: center;
+        margin-top: 28px;
+      }
+      .path-detail {
+        display: none;
+        flex-direction: column;
+        gap: 16px;
+        margin-top: 20px;
+      }
+      .path-detail.open {
+        display: flex;
+      }
+      .path-step {
+        background: var(--color-bg);
+        border-left: 4px solid var(--color-primary);
+        border-radius: var(--radius-sm);
+        padding: 16px 18px;
+      }
+      .path-step-number {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--color-primary);
+        margin-bottom: 4px;
+      }
+      .path-step-question {
+        font-size: 0.92rem;
+        color: var(--color-text-muted);
+        margin-bottom: 6px;
+      }
+      .path-step-answer {
+        font-weight: 600;
+        font-size: 0.95rem;
+        margin-bottom: 10px;
+      }
+      .path-step-answer::before {
+        content: '\2192 ';
+      }
+      .path-step-scores {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .score-pill {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 2px 10px;
+        border-radius: 999px;
+        color: #fff;
+      }
+      .score-pill.pill-einzel {
+        background: var(--color-accent-1);
+      }
+      .score-pill.pill-weg {
+        background: var(--color-accent-2);
+      }
+      .score-pill.pill-gmbh {
+        background: var(--color-accent-3);
+      }
+      .score-pill.pill-geno {
+        background: var(--color-accent-4);
+      }
+
       /* Responsive */
       @media (max-width: 520px) {
         .container {
@@ -641,6 +714,12 @@
             class="other-results"
             aria-label="Weitere Rechtsformen"
           ></div>
+          <div class="path-toggle-wrap">
+            <button class="btn btn-secondary" id="pathToggleBtn">
+              Dein Weg anzeigen &#9662;
+            </button>
+          </div>
+          <div class="path-detail" id="pathDetail"></div>
           <div class="restart-wrap">
             <button
               class="btn btn-secondary"
@@ -882,6 +961,7 @@
           {
             id: 'financing',
             text: 'Wie soll das Projekt finanziert werden?',
+            multi: true,
             answers: [
               {
                 label: 'Klassischer Bankkredit auf meinen Namen',
@@ -1043,6 +1123,8 @@
         var restartBtn = document.getElementById('restartBtn');
         var topResultEl = document.getElementById('topResult');
         var otherResultsEl = document.getElementById('otherResults');
+        var pathToggleBtn = document.getElementById('pathToggleBtn');
+        var pathDetail = document.getElementById('pathDetail');
 
         var LETTERS = ['A', 'B', 'C', 'D'];
         var ACCENT_CLASSES = ['accent-2', 'accent-3', 'accent-4'];
@@ -1097,18 +1179,36 @@
           qAnswers.innerHTML = '';
           qAnswers.setAttribute('aria-label', q.text);
 
+          var isMulti = !!q.multi;
+
+          // Show hint for multi-select questions
+          var existingHint = document.querySelector('.question-hint');
+          if (existingHint) existingHint.remove();
+          if (isMulti) {
+            var hint = document.createElement('div');
+            hint.className = 'question-hint';
+            hint.textContent = 'Mehrere Antworten möglich';
+            qText.parentNode.insertBefore(hint, qText.nextSibling);
+          }
+
+          if (isMulti) {
+            qAnswers.setAttribute('role', 'group');
+          } else {
+            qAnswers.setAttribute('role', 'radiogroup');
+          }
+
           var selected = userAnswers[q.id];
 
           for (var i = 0; i < q.answers.length; i++) {
             (function (idx) {
+              var isSelected = isMulti
+                ? Array.isArray(selected) && selected.indexOf(idx) !== -1
+                : selected === idx;
+
               var btn = document.createElement('button');
-              btn.className =
-                'answer-btn' + (selected === idx ? ' selected' : '');
-              btn.setAttribute('role', 'radio');
-              btn.setAttribute(
-                'aria-checked',
-                selected === idx ? 'true' : 'false',
-              );
+              btn.className = 'answer-btn' + (isSelected ? ' selected' : '');
+              btn.setAttribute('role', isMulti ? 'checkbox' : 'radio');
+              btn.setAttribute('aria-checked', isSelected ? 'true' : 'false');
               btn.setAttribute(
                 'aria-label',
                 LETTERS[idx] + ': ' + q.answers[idx].label,
@@ -1134,7 +1234,12 @@
             })(i);
           }
 
-          nextBtn.disabled = selected === undefined;
+          if (isMulti) {
+            nextBtn.disabled =
+              !Array.isArray(selected) || selected.length === 0;
+          } else {
+            nextBtn.disabled = selected === undefined;
+          }
           updateNextButton();
           updateProgress();
         }
@@ -1142,36 +1247,62 @@
         function selectAnswer(idx) {
           var path = getActivePath();
           var q = path[currentStep];
-          var oldAnswer = userAnswers[q.id];
 
-          // When changing an answer, clear all future answers on the old path
-          // because the path may branch differently now
-          if (oldAnswer !== idx) {
-            for (var i = currentStep + 1; i < path.length; i++) {
-              delete userAnswers[path[i].id];
+          if (q.multi) {
+            // Multi-select: toggle idx in/out of array
+            var arr = Array.isArray(userAnswers[q.id])
+              ? userAnswers[q.id].slice()
+              : [];
+            var pos = arr.indexOf(idx);
+            if (pos !== -1) {
+              arr.splice(pos, 1);
+            } else {
+              arr.push(idx);
             }
-          }
+            userAnswers[q.id] = arr;
 
-          userAnswers[q.id] = idx;
-
-          // Also remove orphaned answers for questions no longer in path
-          var newPath = getActivePath();
-          var inPath = {};
-          for (var i = 0; i < newPath.length; i++) {
-            inPath[newPath[i].id] = true;
-          }
-          for (var qid in userAnswers) {
-            if (userAnswers.hasOwnProperty(qid) && !inPath[qid]) {
-              delete userAnswers[qid];
+            var btns = qAnswers.querySelectorAll('.answer-btn');
+            for (var i = 0; i < btns.length; i++) {
+              var on = arr.indexOf(i) !== -1;
+              btns[i].classList.toggle('selected', on);
+              btns[i].setAttribute('aria-checked', on ? 'true' : 'false');
             }
-          }
+            nextBtn.disabled = arr.length === 0;
+          } else {
+            var oldAnswer = userAnswers[q.id];
 
-          var btns = qAnswers.querySelectorAll('.answer-btn');
-          for (var i = 0; i < btns.length; i++) {
-            btns[i].classList.toggle('selected', i === idx);
-            btns[i].setAttribute('aria-checked', i === idx ? 'true' : 'false');
+            // When changing an answer, clear all future answers on the old path
+            // because the path may branch differently now
+            if (oldAnswer !== idx) {
+              for (var i = currentStep + 1; i < path.length; i++) {
+                delete userAnswers[path[i].id];
+              }
+            }
+
+            userAnswers[q.id] = idx;
+
+            // Also remove orphaned answers for questions no longer in path
+            var newPath = getActivePath();
+            var inPath = {};
+            for (var i = 0; i < newPath.length; i++) {
+              inPath[newPath[i].id] = true;
+            }
+            for (var qid in userAnswers) {
+              if (userAnswers.hasOwnProperty(qid) && !inPath[qid]) {
+                delete userAnswers[qid];
+              }
+            }
+
+            var btns = qAnswers.querySelectorAll('.answer-btn');
+            for (var i = 0; i < btns.length; i++) {
+              btns[i].classList.toggle('selected', i === idx);
+              btns[i].setAttribute(
+                'aria-checked',
+                i === idx ? 'true' : 'false',
+              );
+            }
+            nextBtn.disabled = false;
           }
-          nextBtn.disabled = false;
           updateNextButton();
           updateProgress();
         }
@@ -1188,19 +1319,40 @@
           for (var i = 0; i < path.length; i++) {
             var answerIdx = userAnswers[path[i].id];
             if (answerIdx !== undefined) {
-              var sc = path[i].answers[answerIdx].scores;
-              for (var k = 0; k < keys.length; k++) {
-                totals[keys[k]] += sc[keys[k]] || 0;
+              if (Array.isArray(answerIdx)) {
+                // Multi-select: sum scores from all selected answers
+                for (var m = 0; m < answerIdx.length; m++) {
+                  var sc = path[i].answers[answerIdx[m]].scores;
+                  for (var k = 0; k < keys.length; k++) {
+                    totals[keys[k]] += sc[keys[k]] || 0;
+                  }
+                }
+              } else {
+                var sc = path[i].answers[answerIdx].scores;
+                for (var k = 0; k < keys.length; k++) {
+                  totals[keys[k]] += sc[keys[k]] || 0;
+                }
               }
             }
             // Max possible score per structure for this path
-            for (var k = 0; k < keys.length; k++) {
-              var best = 0;
-              for (var a = 0; a < path[i].answers.length; a++) {
-                var val = path[i].answers[a].scores[keys[k]] || 0;
-                if (val > best) best = val;
+            if (path[i].multi) {
+              // Multi-select: max = sum of all answers' scores (all can be picked)
+              for (var k = 0; k < keys.length; k++) {
+                var total = 0;
+                for (var a = 0; a < path[i].answers.length; a++) {
+                  total += path[i].answers[a].scores[keys[k]] || 0;
+                }
+                maxScores[keys[k]] += total;
               }
-              maxScores[keys[k]] += best;
+            } else {
+              for (var k = 0; k < keys.length; k++) {
+                var best = 0;
+                for (var a = 0; a < path[i].answers.length; a++) {
+                  var val = path[i].answers[a].scores[keys[k]] || 0;
+                  if (val > best) best = val;
+                }
+                maxScores[keys[k]] += best;
+              }
             }
           }
 
@@ -1292,6 +1444,8 @@
             otherResultsEl.appendChild(item);
           }
 
+          renderPath();
+
           // Animate bars after render
           requestAnimationFrame(function () {
             requestAnimationFrame(function () {
@@ -1304,6 +1458,92 @@
             });
           });
         }
+
+        var PILL_CLASSES = {};
+        PILL_CLASSES[EINZEL] = 'pill-einzel';
+        PILL_CLASSES[WEG] = 'pill-weg';
+        PILL_CLASSES[GMBH] = 'pill-gmbh';
+        PILL_CLASSES[GENO] = 'pill-geno';
+
+        var SHORT_LABELS = {};
+        SHORT_LABELS[EINZEL] = 'Einzel';
+        SHORT_LABELS[WEG] = 'WEG';
+        SHORT_LABELS[GMBH] = 'GmbH';
+        SHORT_LABELS[GENO] = 'Geno';
+
+        function renderPath() {
+          var path = getActivePath();
+          pathDetail.innerHTML = '';
+          for (var i = 0; i < path.length; i++) {
+            var q = path[i];
+            var ansIdx = userAnswers[q.id];
+            if (
+              ansIdx === undefined ||
+              (Array.isArray(ansIdx) && ansIdx.length === 0)
+            )
+              continue;
+
+            var answerLines = '';
+            var aggregated = {};
+            for (var k = 0; k < keys.length; k++) {
+              aggregated[keys[k]] = 0;
+            }
+
+            if (Array.isArray(ansIdx)) {
+              // Multi-select: show each selected answer and aggregate scores
+              for (var m = 0; m < ansIdx.length; m++) {
+                var ans = q.answers[ansIdx[m]];
+                answerLines +=
+                  '<div class="path-step-answer">' + ans.label + '</div>';
+                for (var k = 0; k < keys.length; k++) {
+                  aggregated[keys[k]] += ans.scores[keys[k]] || 0;
+                }
+              }
+            } else {
+              var ans = q.answers[ansIdx];
+              answerLines =
+                '<div class="path-step-answer">' + ans.label + '</div>';
+              for (var k = 0; k < keys.length; k++) {
+                aggregated[keys[k]] += ans.scores[keys[k]] || 0;
+              }
+            }
+
+            var pills = '';
+            for (var k = 0; k < keys.length; k++) {
+              if (aggregated[keys[k]] > 0) {
+                pills +=
+                  '<span class="score-pill ' +
+                  PILL_CLASSES[keys[k]] +
+                  '">+' +
+                  aggregated[keys[k]] +
+                  ' ' +
+                  SHORT_LABELS[keys[k]] +
+                  '</span>';
+              }
+            }
+            var step = document.createElement('div');
+            step.className = 'path-step';
+            step.innerHTML =
+              '<div class="path-step-number">Frage ' +
+              (i + 1) +
+              '</div>' +
+              '<div class="path-step-question">' +
+              q.text +
+              '</div>' +
+              answerLines +
+              '<div class="path-step-scores">' +
+              pills +
+              '</div>';
+            pathDetail.appendChild(step);
+          }
+        }
+
+        pathToggleBtn.addEventListener('click', function () {
+          var open = pathDetail.classList.toggle('open');
+          pathToggleBtn.innerHTML = open
+            ? 'Dein Weg ausblenden \u25B4'
+            : 'Dein Weg anzeigen \u25BE';
+        });
 
         // Event listeners
         startBtn.addEventListener('click', function () {
@@ -1343,6 +1583,8 @@
           currentStep = 0;
           userAnswers = {};
           progressWrap.style.display = 'none';
+          pathDetail.classList.remove('open');
+          pathToggleBtn.innerHTML = 'Dein Weg anzeigen \u25BE';
           showScreen(welcomeScreen);
         });
 
