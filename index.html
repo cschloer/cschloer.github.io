@@ -584,9 +584,10 @@
         <div class="card">
           <h2>Welche Rechtsform passt zu deinem Wohnprojekt?</h2>
           <p>
-            Beantworte 8 kurze Fragen und erfahre, ob Einzeleigentum, WEG,
+            Beantworte einige kurze Fragen und erfahre, ob Einzeleigentum, WEG,
             GmbH&nbsp;/&nbsp;Mietshäuser&nbsp;Syndikat oder Genossenschaft am
-            besten zu deinen Zielen passt.
+            besten zu deinen Zielen passt. Je nach deinen Antworten werden
+            passende Folgefragen eingeblendet.
           </p>
           <div style="text-align: center">
             <button
@@ -658,11 +659,12 @@
       (function () {
         'use strict';
 
-        // Keys
+        // Legal structure keys
         var EINZEL = 'einzeleigentum';
         var WEG = 'weg';
         var GMBH = 'gmbh';
         var GENO = 'genossenschaft';
+        var keys = [EINZEL, WEG, GMBH, GENO];
 
         var LABELS = {};
         LABELS[EINZEL] = 'Einzeleigentum';
@@ -725,76 +727,160 @@
           ],
         };
 
-        // Questions
-        var questions = [
+        function score(e, w, g, gen) {
+          var s = {};
+          s[EINZEL] = e;
+          s[WEG] = w;
+          s[GMBH] = g;
+          s[GENO] = gen;
+          return s;
+        }
+
+        // Question pool with conditional branching.
+        // Each question has an id, text, answers, and an optional condition
+        // function. The condition receives the current userAnswers object
+        // (keyed by question id) and returns true if the question should
+        // appear on the current path.
+        var questionPool = [
           {
+            id: 'owner',
             text: 'Wer soll Eigentümer des Projekts sein?',
             answers: [
               { label: 'Ich alleine', scores: score(10, 0, 0, 0) },
               {
-                label: 'Eine kleine Gruppe (2–10 Personen)',
+                label: 'Eine kleine Gruppe (2\u201310 Personen)',
                 scores: score(0, 5, 5, 3),
               },
               {
-                label: 'Eine große Gemeinschaft (mehr als 10 Personen)',
+                label: 'Eine gro\u00dfe Gemeinschaft (mehr als 10 Personen)',
                 scores: score(0, 0, 7, 10),
               },
             ],
           },
           {
+            id: 'speculation',
             text: 'Wie wichtig ist der Schutz vor Verkauf und Spekulation?',
             answers: [
               {
-                label: 'Nicht wichtig – ich möchte flexibel bleiben',
+                label: 'Nicht wichtig \u2013 ich m\u00f6chte flexibel bleiben',
                 scores: score(8, 5, 0, 0),
               },
               {
-                label: 'Etwas wichtig – ein gewisser Schutz wäre gut',
+                label: 'Etwas wichtig \u2013 ein gewisser Schutz w\u00e4re gut',
                 scores: score(0, 5, 0, 5),
               },
               {
                 label:
-                  'Sehr wichtig – das Projekt soll dauerhaft geschützt sein',
+                  'Sehr wichtig \u2013 das Projekt soll dauerhaft gesch\u00fctzt sein',
                 scores: score(0, 0, 10, 8),
               },
             ],
           },
+          // --- Branching: small group + low speculation → WEG detail ---
           {
-            text: 'Wie sollen Entscheidungen im Projekt getroffen werden?',
+            id: 'transfer_restriction',
+            text: 'Soll die Gemeinschaft beim Verkauf einer Wohneinheit ein Mitspracherecht haben (Ver\u00e4u\u00dferungsbeschr\u00e4nkung gem. \u00a7\u00a012 WEG)?',
+            condition: function (a) {
+              return a.owner === 1 && a.speculation === 0;
+            },
             answers: [
-              { label: 'Ich entscheide allein', scores: score(10, 0, 0, 0) },
+              {
+                label: 'Ja \u2013 Verkauf nur mit Zustimmung der Gemeinschaft',
+                scores: score(0, 8, 0, 0),
+              },
+              {
+                label: 'Nein \u2013 jeder soll frei verkaufen k\u00f6nnen',
+                scores: score(6, 2, 0, 0),
+              },
+            ],
+          },
+          // --- Branching: group + high speculation → Syndikat vs Geno ---
+          {
+            id: 'veto',
+            text: 'Soll eine externe Organisation ein dauerhaftes Vetorecht bei Grundsatzentscheidungen haben (z.\u00a0B. Verkauf des Hauses), um Spekulation dauerhaft zu verhindern?',
+            condition: function (a) {
+              return (
+                a.owner !== undefined && a.owner !== 0 && a.speculation === 2
+              );
+            },
+            answers: [
+              {
+                label:
+                  'Ja \u2013 ein externes Vetorecht gibt langfristige Sicherheit gegen Reprivatisierung',
+                scores: score(0, 0, 10, 0),
+              },
+              {
+                label:
+                  'Nein \u2013 die Gruppe soll alle Entscheidungen selbst treffen k\u00f6nnen',
+                scores: score(0, 0, 0, 8),
+              },
+            ],
+          },
+          {
+            id: 'solidarity',
+            text: 'Ist die Gruppe bereit, einen regelm\u00e4\u00dfigen Solidarbeitrag an ein Netzwerk zu zahlen, um neue Wohnprojekte zu unterst\u00fctzen?',
+            condition: function (a) {
+              return (
+                a.owner !== undefined && a.owner !== 0 && a.speculation === 2
+              );
+            },
+            answers: [
+              {
+                label:
+                  'Ja \u2013 wir wollen Teil eines solidarischen Netzwerks sein und neue Projekte mitfinanzieren',
+                scores: score(0, 0, 8, 0),
+              },
+              {
+                label:
+                  'Nein \u2013 unsere Finanzmittel sollen nur unserem eigenen Projekt zugutekommen',
+                scores: score(0, 0, 0, 6),
+              },
+            ],
+          },
+          // --- Conditional: decisions only for groups ---
+          {
+            id: 'decisions',
+            text: 'Wie sollen Entscheidungen im Projekt getroffen werden?',
+            condition: function (a) {
+              return a.owner !== undefined && a.owner !== 0;
+            },
+            answers: [
               {
                 label: 'Mehrheitsentscheid nach Kapitalanteil',
                 scores: score(0, 7, 5, 0),
               },
               {
-                label: 'Demokratisch – eine Person, eine Stimme',
+                label: 'Demokratisch \u2013 eine Person, eine Stimme',
                 scores: score(0, 0, 3, 10),
               },
               {
-                label: 'Strukturierte Führung durch eine Geschäftsführung',
+                label:
+                  'Strukturierte F\u00fchrung durch eine Gesch\u00e4ftsf\u00fchrung',
                 scores: score(0, 0, 8, 0),
               },
             ],
           },
           {
-            text: 'Wie stehst du zur persönlichen Haftung?',
+            id: 'liability',
+            text: 'Wie stehst du zur pers\u00f6nlichen Haftung?',
             answers: [
               {
-                label: 'Ich akzeptiere volle persönliche Haftung',
+                label: 'Ich akzeptiere volle pers\u00f6nliche Haftung',
                 scores: score(8, 0, 0, 0),
               },
               {
-                label: 'Ich möchte anteilige Haftung für meine Einheit',
+                label:
+                  'Ich m\u00f6chte anteilige Haftung f\u00fcr meine Einheit',
                 scores: score(0, 8, 0, 0),
               },
               {
-                label: 'Ich möchte meine Haftung klar begrenzen',
+                label: 'Ich m\u00f6chte meine Haftung klar begrenzen',
                 scores: score(0, 0, 8, 8),
               },
             ],
           },
           {
+            id: 'financing',
             text: 'Wie soll das Projekt finanziert werden?',
             answers: [
               {
@@ -802,62 +888,117 @@
                 scores: score(8, 6, 0, 0),
               },
               {
-                label: 'Bankkredit über eine Gesellschaft',
+                label: 'Bankkredit \u00fcber eine Gesellschaft',
                 scores: score(0, 4, 6, 0),
               },
               {
-                label: 'Ethikbanken und Direktkredite von Unterstützern',
+                label: 'Ethikbanken und Direktkredite von Unterst\u00fctzern',
                 scores: score(0, 0, 10, 0),
               },
               {
-                label: 'Über Mitgliedsanteile und Genossenschaftsbanken',
+                label: '\u00dcber Mitgliedsanteile und Genossenschaftsbanken',
                 scores: score(0, 0, 0, 10),
               },
             ],
           },
+          // --- Branching: group + high speculation → equity model ---
           {
-            text: 'Wie wichtig ist individuelle Wertsteigerung für dich?',
+            id: 'equity',
+            text: 'Sollen die Bewohner/innen eigenes Kapital einbringen (z.\u00a0B. Genossenschaftsanteile), oder soll das Projekt auch ohne Eigenkapital der Bewohner/innen finanzierbar sein?',
+            condition: function (a) {
+              return (
+                a.owner !== undefined && a.owner !== 0 && a.speculation === 2
+              );
+            },
             answers: [
               {
-                label: 'Sehr wichtig – ich möchte vom Wertzuwachs profitieren',
+                label:
+                  'Bewohner/innen sollen Anteile zeichnen und damit Miteigent\u00fcmer werden',
+                scores: score(0, 0, 0, 8),
+              },
+              {
+                label:
+                  'Das Projekt soll auch f\u00fcr Menschen ohne Eigenkapital zug\u00e4nglich sein',
+                scores: score(0, 0, 8, 0),
+              },
+            ],
+          },
+          {
+            id: 'value_increase',
+            text: 'Wie wichtig ist individuelle Wertsteigerung f\u00fcr dich?',
+            answers: [
+              {
+                label:
+                  'Sehr wichtig \u2013 ich m\u00f6chte vom Wertzuwachs profitieren',
                 scores: score(10, 8, 0, 0),
               },
               {
-                label: 'Etwas wichtig – ein fairer Anteil wäre schön',
+                label:
+                  'Etwas wichtig \u2013 ein fairer Anteil w\u00e4re sch\u00f6n',
                 scores: score(0, 5, 0, 3),
               },
               {
                 label:
-                  'Nicht wichtig – gemeinschaftlicher Nutzen steht im Vordergrund',
+                  'Nicht wichtig \u2013 gemeinschaftlicher Nutzen steht im Vordergrund',
                 scores: score(0, 0, 10, 10),
               },
             ],
           },
           {
-            text: 'Wie viel Gründungsaufwand ist für euch akzeptabel?',
+            id: 'founding_effort',
+            text: 'Wie viel Gr\u00fcndungsaufwand ist f\u00fcr euch akzeptabel?',
             answers: [
-              { label: 'So wenig wie möglich', scores: score(10, 6, 0, 0) },
+              {
+                label: 'So wenig wie m\u00f6glich',
+                scores: score(10, 6, 0, 0),
+              },
               {
                 label: 'Mittlerer Aufwand ist in Ordnung',
                 scores: score(0, 5, 7, 0),
               },
               {
                 label:
-                  'Wir nehmen auch hohen Aufwand für die richtige Struktur in Kauf',
+                  'Wir nehmen auch hohen Aufwand f\u00fcr die richtige Struktur in Kauf',
                 scores: score(0, 0, 5, 10),
               },
             ],
           },
+          // --- Branching: large group + high speculation → Geno overhead ---
           {
-            text: 'Sollen Mitglieder oder Bewohner später einfach ein- und austreten können?',
+            id: 'admin_overhead',
+            text: 'Ist die Gruppe bereit, den laufenden Verwaltungsaufwand einer Genossenschaft zu tragen (Pflichtpr\u00fcfung durch Pr\u00fcfungsverband, Vorstand und Aufsichtsrat)?',
+            condition: function (a) {
+              return a.owner === 2 && a.speculation === 2;
+            },
             answers: [
               {
-                label: 'Nein – fester Kreis, keine Änderungen geplant',
+                label:
+                  'Ja \u2013 formale Strukturen geben uns Sicherheit und Professionalit\u00e4t',
+                scores: score(0, 0, 0, 8),
+              },
+              {
+                label:
+                  'Nein \u2013 wir bevorzugen schlankere Strukturen mit weniger B\u00fcrokratie',
+                scores: score(0, 0, 6, 0),
+              },
+            ],
+          },
+          // --- Conditional: membership only for groups ---
+          {
+            id: 'membership',
+            text: 'Sollen Mitglieder oder Bewohner sp\u00e4ter einfach ein- und austreten k\u00f6nnen?',
+            condition: function (a) {
+              return a.owner !== undefined && a.owner !== 0;
+            },
+            answers: [
+              {
+                label:
+                  'Nein \u2013 fester Kreis, keine \u00c4nderungen geplant',
                 scores: score(5, 5, 0, 0),
               },
               {
                 label:
-                  'Ja, aber das Gemeinschaftsvermögen soll geschützt bleiben',
+                  'Ja, aber das Gemeinschaftsverm\u00f6gen soll gesch\u00fctzt bleiben',
                 scores: score(0, 0, 8, 10),
               },
               {
@@ -868,39 +1009,22 @@
           },
         ];
 
-        function score(e, w, g, gen) {
-          var s = {};
-          s[EINZEL] = e;
-          s[WEG] = w;
-          s[GMBH] = g;
-          s[GENO] = gen;
-          return s;
-        }
-
-        // Calculate max possible scores dynamically
-        var maxScores = {};
-        maxScores[EINZEL] = 0;
-        maxScores[WEG] = 0;
-        maxScores[GMBH] = 0;
-        maxScores[GENO] = 0;
-
-        var keys = [EINZEL, WEG, GMBH, GENO];
-        for (var q = 0; q < questions.length; q++) {
-          for (var k = 0; k < keys.length; k++) {
-            var key = keys[k];
-            var best = 0;
-            for (var a = 0; a < questions[q].answers.length; a++) {
-              var val = questions[q].answers[a].scores[key] || 0;
-              if (val > best) best = val;
+        // Compute active question path based on current answers.
+        // Only includes questions whose condition is met (or unconditional).
+        function getActivePath() {
+          var path = [];
+          for (var i = 0; i < questionPool.length; i++) {
+            var q = questionPool[i];
+            if (!q.condition || q.condition(userAnswers)) {
+              path.push(q);
             }
-            maxScores[key] += best;
           }
+          return path;
         }
 
-        // State
-        var currentQuestion = 0;
-        var userAnswers = [];
-        var TOTAL = questions.length;
+        // State – answers keyed by question id, step is index into active path
+        var currentStep = 0;
+        var userAnswers = {};
 
         // DOM
         var welcomeScreen = document.getElementById('welcome');
@@ -942,23 +1066,38 @@
         }
 
         function updateProgress() {
-          var pct = Math.round((currentQuestion / TOTAL) * 100);
+          var path = getActivePath();
+          var total = path.length;
+          var pct = Math.round((currentStep / total) * 100);
           progressLabel.textContent =
-            'Frage ' + (currentQuestion + 1) + ' von ' + TOTAL;
+            'Frage ' + (currentStep + 1) + ' von ' + total;
           progressPct.textContent = pct + ' %';
           progressFill.style.width = pct + '%';
           progressWrap.setAttribute('aria-valuenow', pct);
         }
 
+        function updateNextButton() {
+          var path = getActivePath();
+          if (currentStep < path.length - 1) {
+            nextBtn.innerHTML =
+              'Weiter <span class="btn-icon" aria-hidden="true">&#8594;</span>';
+          } else {
+            nextBtn.innerHTML =
+              'Ergebnis anzeigen <span class="btn-icon" aria-hidden="true">&#8594;</span>';
+          }
+        }
+
         function renderQuestion() {
-          var q = questions[currentQuestion];
-          qNumber.textContent =
-            'Frage ' + (currentQuestion + 1) + ' von ' + TOTAL;
+          var path = getActivePath();
+          var q = path[currentStep];
+          var total = path.length;
+
+          qNumber.textContent = 'Frage ' + (currentStep + 1) + ' von ' + total;
           qText.textContent = q.text;
           qAnswers.innerHTML = '';
           qAnswers.setAttribute('aria-label', q.text);
 
-          var selected = userAnswers[currentQuestion];
+          var selected = userAnswers[q.id];
 
           for (var i = 0; i < q.answers.length; i++) {
             (function (idx) {
@@ -996,41 +1135,72 @@
           }
 
           nextBtn.disabled = selected === undefined;
-          nextBtn.textContent =
-            currentQuestion === TOTAL - 1 ? 'Ergebnis anzeigen' : 'Weiter';
-          if (currentQuestion < TOTAL - 1) {
-            nextBtn.innerHTML =
-              'Weiter <span class="btn-icon" aria-hidden="true">&#8594;</span>';
-          } else {
-            nextBtn.innerHTML =
-              'Ergebnis anzeigen <span class="btn-icon" aria-hidden="true">&#8594;</span>';
-          }
+          updateNextButton();
           updateProgress();
         }
 
         function selectAnswer(idx) {
-          userAnswers[currentQuestion] = idx;
+          var path = getActivePath();
+          var q = path[currentStep];
+          var oldAnswer = userAnswers[q.id];
+
+          // When changing an answer, clear all future answers on the old path
+          // because the path may branch differently now
+          if (oldAnswer !== idx) {
+            for (var i = currentStep + 1; i < path.length; i++) {
+              delete userAnswers[path[i].id];
+            }
+          }
+
+          userAnswers[q.id] = idx;
+
+          // Also remove orphaned answers for questions no longer in path
+          var newPath = getActivePath();
+          var inPath = {};
+          for (var i = 0; i < newPath.length; i++) {
+            inPath[newPath[i].id] = true;
+          }
+          for (var qid in userAnswers) {
+            if (userAnswers.hasOwnProperty(qid) && !inPath[qid]) {
+              delete userAnswers[qid];
+            }
+          }
+
           var btns = qAnswers.querySelectorAll('.answer-btn');
           for (var i = 0; i < btns.length; i++) {
             btns[i].classList.toggle('selected', i === idx);
             btns[i].setAttribute('aria-checked', i === idx ? 'true' : 'false');
           }
           nextBtn.disabled = false;
+          updateNextButton();
+          updateProgress();
         }
 
         function calculateResults() {
+          var path = getActivePath();
           var totals = {};
-          totals[EINZEL] = 0;
-          totals[WEG] = 0;
-          totals[GMBH] = 0;
-          totals[GENO] = 0;
+          var maxScores = {};
+          for (var k = 0; k < keys.length; k++) {
+            totals[keys[k]] = 0;
+            maxScores[keys[k]] = 0;
+          }
 
-          for (var i = 0; i < questions.length; i++) {
-            var answerIdx = userAnswers[i];
-            if (answerIdx === undefined) continue;
-            var sc = questions[i].answers[answerIdx].scores;
+          for (var i = 0; i < path.length; i++) {
+            var answerIdx = userAnswers[path[i].id];
+            if (answerIdx !== undefined) {
+              var sc = path[i].answers[answerIdx].scores;
+              for (var k = 0; k < keys.length; k++) {
+                totals[keys[k]] += sc[keys[k]] || 0;
+              }
+            }
+            // Max possible score per structure for this path
             for (var k = 0; k < keys.length; k++) {
-              totals[keys[k]] += sc[keys[k]] || 0;
+              var best = 0;
+              for (var a = 0; a < path[i].answers.length; a++) {
+                var val = path[i].answers[a].scores[keys[k]] || 0;
+                if (val > best) best = val;
+              }
+              maxScores[keys[k]] += best;
             }
           }
 
@@ -1137,16 +1307,18 @@
 
         // Event listeners
         startBtn.addEventListener('click', function () {
-          currentQuestion = 0;
+          currentStep = 0;
           progressWrap.style.display = 'block';
           showScreen(questionScreen);
           renderQuestion();
         });
 
         nextBtn.addEventListener('click', function () {
-          if (userAnswers[currentQuestion] === undefined) return;
-          if (currentQuestion < TOTAL - 1) {
-            currentQuestion++;
+          var path = getActivePath();
+          var q = path[currentStep];
+          if (userAnswers[q.id] === undefined) return;
+          if (currentStep < path.length - 1) {
+            currentStep++;
             showScreen(questionScreen);
             renderQuestion();
           } else {
@@ -1157,8 +1329,8 @@
         });
 
         backBtn.addEventListener('click', function () {
-          if (currentQuestion > 0) {
-            currentQuestion--;
+          if (currentStep > 0) {
+            currentStep--;
             showScreen(questionScreen);
             renderQuestion();
           } else {
@@ -1168,8 +1340,8 @@
         });
 
         restartBtn.addEventListener('click', function () {
-          currentQuestion = 0;
-          userAnswers = [];
+          currentStep = 0;
+          userAnswers = {};
           progressWrap.style.display = 'none';
           showScreen(welcomeScreen);
         });
