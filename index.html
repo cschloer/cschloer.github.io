@@ -1,185 +1,1198 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ultireps</title>
-    <link rel="icon" type="image/png" href="assets/images/favicon.png">
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rechtsform-Finder für Wohnprojekte</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+      :root {
+        --color-bg: #f5f5f0;
+        --color-surface: #ffffff;
+        --color-primary: #2d5a3d;
+        --color-primary-light: #3d7a53;
+        --color-primary-faint: #e8f0eb;
+        --color-text: #1a1a1a;
+        --color-text-muted: #6b6b6b;
+        --color-border: #e0e0d8;
+        --color-accent-1: #2d5a3d;
+        --color-accent-2: #4a7c6b;
+        --color-accent-3: #c47a2a;
+        --color-accent-4: #6b5b8a;
+        --radius: 12px;
+        --radius-sm: 8px;
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04);
+        --shadow-lg:
+          0 4px 12px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.06);
+        --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #487F7A 0%, #5a9590 100%);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            text-align: center;
-            padding: 20px;
-        }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        background: var(--color-bg);
+        color: var(--color-text);
+        min-height: 100vh;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .container {
+        max-width: 680px;
+        margin: 0 auto;
+        padding: 24px 20px 48px;
+      }
+
+      /* Header */
+      header {
+        text-align: center;
+        padding: 32px 0 24px;
+      }
+
+      header h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--color-primary);
+        letter-spacing: -0.02em;
+      }
+
+      header p {
+        color: var(--color-text-muted);
+        font-size: 0.95rem;
+        margin-top: 6px;
+      }
+
+      /* Progress bar */
+      .progress-wrap {
+        margin-bottom: 32px;
+      }
+
+      .progress-info {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        color: var(--color-text-muted);
+        margin-bottom: 8px;
+        font-weight: 500;
+      }
+
+      .progress-track {
+        height: 6px;
+        background: var(--color-border);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: var(--color-primary);
+        border-radius: 3px;
+        width: 0%;
+        transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* Card */
+      .card {
+        background: var(--color-surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 32px 28px;
+        position: relative;
+      }
+
+      /* Screen transitions */
+      .screen {
+        display: none;
+        opacity: 0;
+        transform: translateY(12px);
+        transition:
+          opacity 0.35s ease,
+          transform 0.35s ease;
+      }
+
+      .screen.active {
+        display: block;
+      }
+
+      .screen.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Welcome screen */
+      #welcome .card {
+        text-align: center;
+        padding: 48px 28px;
+      }
+
+      #welcome h2 {
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin-bottom: 12px;
+        color: var(--color-text);
+      }
+
+      #welcome p {
+        color: var(--color-text-muted);
+        font-size: 0.95rem;
+        max-width: 480px;
+        margin: 0 auto 28px;
+      }
+
+      /* Question */
+      .question-number {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--color-primary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 8px;
+      }
+
+      .question-text {
+        font-size: 1.15rem;
+        font-weight: 600;
+        margin-bottom: 24px;
+        line-height: 1.45;
+      }
+
+      /* Answer buttons */
+      .answers {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .answer-btn {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        width: 100%;
+        padding: 14px 16px;
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        background: var(--color-surface);
+        cursor: pointer;
+        text-align: left;
+        font-family: inherit;
+        font-size: 0.95rem;
+        color: var(--color-text);
+        transition:
+          border-color var(--transition),
+          background var(--transition),
+          box-shadow var(--transition);
+        line-height: 1.45;
+      }
+
+      .answer-btn:hover {
+        border-color: var(--color-primary-light);
+        background: var(--color-primary-faint);
+      }
+
+      .answer-btn:focus-visible {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 2px;
+      }
+
+      .answer-btn.selected {
+        border-color: var(--color-primary);
+        background: var(--color-primary-faint);
+        box-shadow: 0 0 0 1px var(--color-primary);
+      }
+
+      .answer-letter {
+        flex-shrink: 0;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--color-bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.8rem;
+        color: var(--color-text-muted);
+        transition:
+          background var(--transition),
+          color var(--transition);
+      }
+
+      .answer-btn.selected .answer-letter {
+        background: var(--color-primary);
+        color: #fff;
+      }
+
+      .answer-label {
+        padding-top: 3px;
+      }
+
+      /* Navigation */
+      .nav-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 24px;
+        gap: 12px;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 12px 24px;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-family: inherit;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition:
+          background var(--transition),
+          opacity var(--transition),
+          transform 0.15s ease;
+      }
+
+      .btn:active {
+        transform: scale(0.97);
+      }
+
+      .btn:focus-visible {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 2px;
+      }
+
+      .btn-primary {
+        background: var(--color-primary);
+        color: #fff;
+      }
+
+      .btn-primary:hover {
+        background: var(--color-primary-light);
+      }
+
+      .btn-primary:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .btn-secondary {
+        background: transparent;
+        color: var(--color-text-muted);
+        padding: 12px 16px;
+      }
+
+      .btn-secondary:hover {
+        color: var(--color-text);
+        background: var(--color-bg);
+      }
+
+      .btn-icon {
+        font-size: 1.1em;
+        line-height: 1;
+      }
+
+      /* Results */
+      #result .card {
+        padding: 36px 28px;
+      }
+
+      .result-header {
+        text-align: center;
+        margin-bottom: 28px;
+      }
+
+      .result-header h2 {
+        font-size: 1.3rem;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+
+      .result-header p {
+        color: var(--color-text-muted);
+        font-size: 0.9rem;
+      }
+
+      /* Top result */
+      .top-result {
+        background: var(--color-primary-faint);
+        border: 2px solid var(--color-primary);
+        border-radius: var(--radius);
+        padding: 24px;
+        margin-bottom: 24px;
+      }
+
+      .top-badge {
+        display: inline-block;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--color-primary);
+        margin-bottom: 8px;
+      }
+
+      .top-result h3 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+
+      .top-percent {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--color-primary);
+        margin-bottom: 12px;
+      }
+
+      .top-bar-track {
+        height: 10px;
+        background: rgba(0, 0, 0, 0.08);
+        border-radius: 5px;
+        overflow: hidden;
+        margin-bottom: 16px;
+      }
+
+      .top-bar-fill {
+        height: 100%;
+        background: var(--color-primary);
+        border-radius: 5px;
+        width: 0%;
+        transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .top-why {
+        font-size: 0.92rem;
+        color: var(--color-text);
+        font-style: italic;
+        margin-bottom: 16px;
+        line-height: 1.55;
+      }
+
+      .pros-cons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      .pros-cons h4 {
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 6px;
+      }
+
+      .pros-cons h4.pro-title {
+        color: var(--color-primary);
+      }
+      .pros-cons h4.con-title {
+        color: var(--color-accent-3);
+      }
+
+      .pros-cons ul {
+        list-style: none;
+        font-size: 0.85rem;
+        color: var(--color-text-muted);
+      }
+
+      .pros-cons li {
+        position: relative;
+        padding-left: 16px;
+        margin-bottom: 4px;
+        line-height: 1.45;
+      }
+
+      .pros-cons li::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 7px;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+      }
+
+      .pro-list li::before {
+        background: var(--color-primary);
+      }
+      .con-list li::before {
+        background: var(--color-accent-3);
+      }
+
+      /* Other results */
+      .other-results {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .other-item {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .other-rank {
+        flex-shrink: 0;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--color-bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--color-text-muted);
+      }
+
+      .other-info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .other-name {
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+
+      .other-bar-track {
+        height: 6px;
+        background: var(--color-border);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+
+      .other-bar-fill {
+        height: 100%;
+        border-radius: 3px;
+        width: 0%;
+        transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .other-bar-fill.accent-2 {
+        background: var(--color-accent-2);
+      }
+      .other-bar-fill.accent-3 {
+        background: var(--color-accent-3);
+      }
+      .other-bar-fill.accent-4 {
+        background: var(--color-accent-4);
+      }
+
+      .other-pct {
+        flex-shrink: 0;
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--color-text-muted);
+        min-width: 44px;
+        text-align: right;
+      }
+
+      /* Restart */
+      .restart-wrap {
+        text-align: center;
+        margin-top: 28px;
+      }
+
+      /* Responsive */
+      @media (max-width: 520px) {
         .container {
-            max-width: 400px;
-            width: 100%;
+          padding: 16px 14px 40px;
         }
-
-        .app-icon {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 1rem;
-            border-radius: 16px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        header {
+          padding: 20px 0 16px;
         }
-
-        .logo {
-            font-size: 3rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-            letter-spacing: -1px;
+        header h1 {
+          font-size: 1.25rem;
         }
-
-        .tagline {
-            font-size: 1.2rem;
-            margin-bottom: 3rem;
-            opacity: 0.9;
-            line-height: 1.4;
+        .card {
+          padding: 24px 18px;
         }
-
-        .download-btn {
-            background: white;
-            color: #487F7A;
-            border: none;
-            padding: 16px 32px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        #welcome .card {
+          padding: 36px 18px;
         }
-
-        .download-icon {
-            width: 20px;
-            height: 20px;
+        #result .card {
+          padding: 28px 18px;
         }
-
-        .download-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        .question-text {
+          font-size: 1.05rem;
         }
-
-        .not-supported {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 24px;
-            border-radius: 12px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
+        .pros-cons {
+          grid-template-columns: 1fr;
+          gap: 12px;
         }
-
-        .sad-face {
-            font-size: 3rem;
-            margin-bottom: 1rem;
+        .top-percent {
+          font-size: 1.6rem;
         }
-
-        .not-supported-text {
-            font-size: 1.1rem;
-            line-height: 1.4;
-        }
-
-        @media (max-width: 480px) {
-            .app-icon {
-                width: 60px;
-                height: 60px;
-            }
-
-            .logo {
-                font-size: 2.5rem;
-            }
-            
-            .tagline {
-                font-size: 1.1rem;
-            }
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <img src="assets/images/icon.png" alt="ultireps icon" class="app-icon">
-        <div class="logo">ultireps</div>
-        
-        <div id="download-section">
-            <a href="#" id="download-btn" class="download-btn">
-                Download Now
-            </a>
+      <header>
+        <h1>Rechtsform-Finder</h1>
+        <p>Finde die passende Rechtsform für dein Wohnprojekt</p>
+      </header>
+
+      <div
+        class="progress-wrap"
+        id="progressWrap"
+        style="display: none"
+        role="progressbar"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="0"
+        aria-label="Fortschritt des Fragebogens"
+      >
+        <div class="progress-info">
+          <span id="progressLabel">Frage 1 von 8</span>
+          <span id="progressPct">0 %</span>
         </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      <!-- Welcome -->
+      <div class="screen active visible" id="welcome">
+        <div class="card">
+          <h2>Welche Rechtsform passt zu deinem Wohnprojekt?</h2>
+          <p>
+            Beantworte 8 kurze Fragen und erfahre, ob Einzeleigentum, WEG,
+            GmbH&nbsp;/&nbsp;Mietshäuser&nbsp;Syndikat oder Genossenschaft am
+            besten zu deinen Zielen passt.
+          </p>
+          <div style="text-align: center">
+            <button
+              class="btn btn-primary"
+              id="startBtn"
+              aria-label="Fragebogen starten"
+            >
+              Los geht's
+              <span class="btn-icon" aria-hidden="true">&#8594;</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Question screen (reused) -->
+      <div class="screen" id="question">
+        <div class="card">
+          <div class="question-number" id="qNumber"></div>
+          <div class="question-text" id="qText"></div>
+          <div class="answers" id="qAnswers" role="radiogroup"></div>
+          <div class="nav-row">
+            <button
+              class="btn btn-secondary"
+              id="backBtn"
+              aria-label="Zurück zur vorherigen Frage"
+            >
+              <span class="btn-icon" aria-hidden="true">&#8592;</span> Zurück
+            </button>
+            <button
+              class="btn btn-primary"
+              id="nextBtn"
+              disabled
+              aria-label="Weiter zur nächsten Frage"
+            >
+              Weiter <span class="btn-icon" aria-hidden="true">&#8594;</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Result -->
+      <div class="screen" id="result">
+        <div class="card">
+          <div class="result-header">
+            <h2>Dein Ergebnis</h2>
+            <p>Basierend auf deinen Antworten</p>
+          </div>
+          <div id="topResult" class="top-result" aria-live="polite"></div>
+          <div
+            id="otherResults"
+            class="other-results"
+            aria-label="Weitere Rechtsformen"
+          ></div>
+          <div class="restart-wrap">
+            <button
+              class="btn btn-secondary"
+              id="restartBtn"
+              aria-label="Fragebogen nochmal starten"
+            >
+              &#8635; Nochmal starten
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script>
-        function detectDevice() {
-            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-            
-            // Check if it's iOS
-            if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
-                return 'ios';
-            }
-            
-            // Check if it's Android
-            if (/android/i.test(userAgent)) {
-                return 'android';
-            }
-            
-            // Everything else
-            return 'other';
+      (function () {
+        "use strict";
+
+        // Keys
+        var EINZEL = "einzeleigentum";
+        var WEG = "weg";
+        var GMBH = "gmbh";
+        var GENO = "genossenschaft";
+
+        var LABELS = {};
+        LABELS[EINZEL] = "Einzeleigentum";
+        LABELS[WEG] = "Wohnungseigentum (WEG)";
+        LABELS[GMBH] = "GmbH / Mietshäuser Syndikat";
+        LABELS[GENO] = "Genossenschaft";
+
+        // Result content
+        var RESULT_DATA = {};
+        RESULT_DATA[EINZEL] = {
+          why: "Du bevorzugst individuelle Kontrolle und Flexibilität – Einzeleigentum passt am besten zu deinen Prioritäten.",
+          pros: [
+            "Volle Entscheidungsfreiheit",
+            "Einfachste Gründung",
+            "Direkte Wertsteigerung",
+          ],
+          cons: [
+            "Volle persönliche Haftung",
+            "Kein Schutz vor Privatisierung",
+            "Nicht für Gruppen geeignet",
+          ],
+        };
+        RESULT_DATA[WEG] = {
+          why: "Du möchtest eine eigene Einheit mit etwas gemeinschaftlicher Struktur – WEG bietet den passenden Rahmen.",
+          pros: [
+            "Etablierter Rechtsrahmen",
+            "Einzelne Einheiten separat finanzierbar",
+            "Überschaubare Gründung",
+          ],
+          cons: [
+            "Schwacher Schutz vor Privatisierung",
+            "Persönliche Haftung",
+            "WEG-Reform stärkt Individualrechte",
+          ],
+        };
+        RESULT_DATA[GMBH] = {
+          why: "Dauerhafter Schutz vor Spekulation bei klarer Haftungsbegrenzung – das Syndikat-Modell passt zu deinen Zielen.",
+          pros: [
+            "Stärkster Schutz vor Privatisierung",
+            "Beschränkte Haftung",
+            "Bewährtes Modell",
+          ],
+          cons: [
+            "Eingeschränkte Bankenfinanzierung",
+            "Direktkredite nötig",
+            "Syndikat-GmbH als Mitgesellschafterin erforderlich",
+          ],
+        };
+        RESULT_DATA[GENO] = {
+          why: "Demokratie und Gemeinschaft stehen für dich im Mittelpunkt – die Genossenschaft ist deine stärkste Option.",
+          pros: [
+            "Echte Demokratie (1 Mitglied = 1 Stimme)",
+            "Beschränkte Haftung",
+            "Zugang zu Genossenschaftsbanken",
+          ],
+          cons: [
+            "Aufwändige Gründung",
+            "Pflichtprüfung durch Genossenschaftsverband",
+            "Weniger flexibel als GmbH",
+          ],
+        };
+
+        // Questions
+        var questions = [
+          {
+            text: "Wer soll Eigentümer des Projekts sein?",
+            answers: [
+              { label: "Ich alleine", scores: score(10, 0, 0, 0) },
+              {
+                label: "Eine kleine Gruppe (2–10 Personen)",
+                scores: score(0, 5, 5, 3),
+              },
+              {
+                label: "Eine große Gemeinschaft (mehr als 10 Personen)",
+                scores: score(0, 0, 7, 10),
+              },
+            ],
+          },
+          {
+            text: "Wie wichtig ist der Schutz vor Verkauf und Spekulation?",
+            answers: [
+              {
+                label: "Nicht wichtig – ich möchte flexibel bleiben",
+                scores: score(8, 5, 0, 0),
+              },
+              {
+                label: "Etwas wichtig – ein gewisser Schutz wäre gut",
+                scores: score(0, 5, 0, 5),
+              },
+              {
+                label:
+                  "Sehr wichtig – das Projekt soll dauerhaft geschützt sein",
+                scores: score(0, 0, 10, 8),
+              },
+            ],
+          },
+          {
+            text: "Wie sollen Entscheidungen im Projekt getroffen werden?",
+            answers: [
+              { label: "Ich entscheide allein", scores: score(10, 0, 0, 0) },
+              {
+                label: "Mehrheitsentscheid nach Kapitalanteil",
+                scores: score(0, 7, 5, 0),
+              },
+              {
+                label: "Demokratisch – eine Person, eine Stimme",
+                scores: score(0, 0, 3, 10),
+              },
+              {
+                label: "Strukturierte Führung durch eine Geschäftsführung",
+                scores: score(0, 0, 8, 0),
+              },
+            ],
+          },
+          {
+            text: "Wie stehst du zur persönlichen Haftung?",
+            answers: [
+              {
+                label: "Ich akzeptiere volle persönliche Haftung",
+                scores: score(8, 0, 0, 0),
+              },
+              {
+                label: "Ich möchte anteilige Haftung für meine Einheit",
+                scores: score(0, 8, 0, 0),
+              },
+              {
+                label: "Ich möchte meine Haftung klar begrenzen",
+                scores: score(0, 0, 8, 8),
+              },
+            ],
+          },
+          {
+            text: "Wie soll das Projekt finanziert werden?",
+            answers: [
+              {
+                label: "Klassischer Bankkredit auf meinen Namen",
+                scores: score(8, 6, 0, 0),
+              },
+              {
+                label: "Bankkredit über eine Gesellschaft",
+                scores: score(0, 4, 6, 0),
+              },
+              {
+                label: "Ethikbanken und Direktkredite von Unterstützern",
+                scores: score(0, 0, 10, 0),
+              },
+              {
+                label: "Über Mitgliedsanteile und Genossenschaftsbanken",
+                scores: score(0, 0, 0, 10),
+              },
+            ],
+          },
+          {
+            text: "Wie wichtig ist individuelle Wertsteigerung für dich?",
+            answers: [
+              {
+                label: "Sehr wichtig – ich möchte vom Wertzuwachs profitieren",
+                scores: score(10, 8, 0, 0),
+              },
+              {
+                label: "Etwas wichtig – ein fairer Anteil wäre schön",
+                scores: score(0, 5, 0, 3),
+              },
+              {
+                label:
+                  "Nicht wichtig – gemeinschaftlicher Nutzen steht im Vordergrund",
+                scores: score(0, 0, 10, 10),
+              },
+            ],
+          },
+          {
+            text: "Wie viel Gründungsaufwand ist für euch akzeptabel?",
+            answers: [
+              { label: "So wenig wie möglich", scores: score(10, 6, 0, 0) },
+              {
+                label: "Mittlerer Aufwand ist in Ordnung",
+                scores: score(0, 5, 7, 0),
+              },
+              {
+                label:
+                  "Wir nehmen auch hohen Aufwand für die richtige Struktur in Kauf",
+                scores: score(0, 0, 5, 10),
+              },
+            ],
+          },
+          {
+            text: "Sollen Mitglieder oder Bewohner später einfach ein- und austreten können?",
+            answers: [
+              {
+                label: "Nein – fester Kreis, keine Änderungen geplant",
+                scores: score(5, 5, 0, 0),
+              },
+              {
+                label:
+                  "Ja, aber das Gemeinschaftsvermögen soll geschützt bleiben",
+                scores: score(0, 0, 8, 10),
+              },
+              {
+                label: "Ja, mit vollem Anspruch auf den eigenen Wertzuwachs",
+                scores: score(7, 8, 0, 0),
+              },
+            ],
+          },
+        ];
+
+        function score(e, w, g, gen) {
+          var s = {};
+          s[EINZEL] = e;
+          s[WEG] = w;
+          s[GMBH] = g;
+          s[GENO] = gen;
+          return s;
         }
 
-        function setupDownloadButton() {
-            const device = detectDevice();
-            const downloadBtn = document.getElementById('download-btn');
-            
-            if (device === 'ios') {
-                downloadBtn.href = 'https://apps.apple.com/app/placeholder';
-                downloadBtn.innerHTML = `
-                    <svg class="download-icon" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-                    </svg>
-                    Download on App Store
-                `;
-            } else if (device === 'android') {
-                downloadBtn.href = 'https://play.google.com/store/apps/details?id=placeholder';
-                downloadBtn.innerHTML = `
-                    <svg class="download-icon" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.53,12.9 20.18,13.18L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z"/>
-                    </svg>
-                    Get it on Google Play
-                `;
-            } else {
-                downloadBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const downloadSection = document.getElementById('download-section');
-                    downloadSection.innerHTML = `
-                        <div class="not-supported">
-                            <div class="sad-face">😢</div>
-                            <div class="not-supported-text">
-                                Sorry, ultireps is only available on mobile devices (iOS and Android).
-                            </div>
-                        </div>
-                    `;
+        // Calculate max possible scores dynamically
+        var maxScores = {};
+        maxScores[EINZEL] = 0;
+        maxScores[WEG] = 0;
+        maxScores[GMBH] = 0;
+        maxScores[GENO] = 0;
+
+        var keys = [EINZEL, WEG, GMBH, GENO];
+        for (var q = 0; q < questions.length; q++) {
+          for (var k = 0; k < keys.length; k++) {
+            var key = keys[k];
+            var best = 0;
+            for (var a = 0; a < questions[q].answers.length; a++) {
+              var val = questions[q].answers[a].scores[key] || 0;
+              if (val > best) best = val;
+            }
+            maxScores[key] += best;
+          }
+        }
+
+        // State
+        var currentQuestion = 0;
+        var userAnswers = [];
+        var TOTAL = questions.length;
+
+        // DOM
+        var welcomeScreen = document.getElementById("welcome");
+        var questionScreen = document.getElementById("question");
+        var resultScreen = document.getElementById("result");
+        var progressWrap = document.getElementById("progressWrap");
+        var progressLabel = document.getElementById("progressLabel");
+        var progressPct = document.getElementById("progressPct");
+        var progressFill = document.getElementById("progressFill");
+        var qNumber = document.getElementById("qNumber");
+        var qText = document.getElementById("qText");
+        var qAnswers = document.getElementById("qAnswers");
+        var nextBtn = document.getElementById("nextBtn");
+        var backBtn = document.getElementById("backBtn");
+        var startBtn = document.getElementById("startBtn");
+        var restartBtn = document.getElementById("restartBtn");
+        var topResultEl = document.getElementById("topResult");
+        var otherResultsEl = document.getElementById("otherResults");
+
+        var LETTERS = ["A", "B", "C", "D"];
+        var ACCENT_CLASSES = ["accent-2", "accent-3", "accent-4"];
+
+        function showScreen(screen) {
+          var screens = [welcomeScreen, questionScreen, resultScreen];
+          for (var i = 0; i < screens.length; i++) {
+            var s = screens[i];
+            if (s === screen) {
+              s.classList.add("active");
+              requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                  screen.classList.add("visible");
                 });
+              });
+            } else {
+              s.classList.remove("visible");
+              s.classList.remove("active");
             }
+          }
         }
 
-        // Initialize when page loads
-        document.addEventListener('DOMContentLoaded', setupDownloadButton);
+        function updateProgress() {
+          var pct = Math.round((currentQuestion / TOTAL) * 100);
+          progressLabel.textContent =
+            "Frage " + (currentQuestion + 1) + " von " + TOTAL;
+          progressPct.textContent = pct + " %";
+          progressFill.style.width = pct + "%";
+          progressWrap.setAttribute("aria-valuenow", pct);
+        }
+
+        function renderQuestion() {
+          var q = questions[currentQuestion];
+          qNumber.textContent =
+            "Frage " + (currentQuestion + 1) + " von " + TOTAL;
+          qText.textContent = q.text;
+          qAnswers.innerHTML = "";
+          qAnswers.setAttribute("aria-label", q.text);
+
+          var selected = userAnswers[currentQuestion];
+
+          for (var i = 0; i < q.answers.length; i++) {
+            (function (idx) {
+              var btn = document.createElement("button");
+              btn.className =
+                "answer-btn" + (selected === idx ? " selected" : "");
+              btn.setAttribute("role", "radio");
+              btn.setAttribute(
+                "aria-checked",
+                selected === idx ? "true" : "false",
+              );
+              btn.setAttribute(
+                "aria-label",
+                LETTERS[idx] + ": " + q.answers[idx].label,
+              );
+
+              var letter = document.createElement("span");
+              letter.className = "answer-letter";
+              letter.setAttribute("aria-hidden", "true");
+              letter.textContent = LETTERS[idx];
+
+              var label = document.createElement("span");
+              label.className = "answer-label";
+              label.textContent = q.answers[idx].label;
+
+              btn.appendChild(letter);
+              btn.appendChild(label);
+
+              btn.addEventListener("click", function () {
+                selectAnswer(idx);
+              });
+
+              qAnswers.appendChild(btn);
+            })(i);
+          }
+
+          nextBtn.disabled = selected === undefined;
+          nextBtn.textContent =
+            currentQuestion === TOTAL - 1 ? "Ergebnis anzeigen" : "Weiter";
+          if (currentQuestion < TOTAL - 1) {
+            nextBtn.innerHTML =
+              'Weiter <span class="btn-icon" aria-hidden="true">&#8594;</span>';
+          } else {
+            nextBtn.innerHTML =
+              'Ergebnis anzeigen <span class="btn-icon" aria-hidden="true">&#8594;</span>';
+          }
+          updateProgress();
+        }
+
+        function selectAnswer(idx) {
+          userAnswers[currentQuestion] = idx;
+          var btns = qAnswers.querySelectorAll(".answer-btn");
+          for (var i = 0; i < btns.length; i++) {
+            btns[i].classList.toggle("selected", i === idx);
+            btns[i].setAttribute("aria-checked", i === idx ? "true" : "false");
+          }
+          nextBtn.disabled = false;
+        }
+
+        function calculateResults() {
+          var totals = {};
+          totals[EINZEL] = 0;
+          totals[WEG] = 0;
+          totals[GMBH] = 0;
+          totals[GENO] = 0;
+
+          for (var i = 0; i < questions.length; i++) {
+            var answerIdx = userAnswers[i];
+            if (answerIdx === undefined) continue;
+            var sc = questions[i].answers[answerIdx].scores;
+            for (var k = 0; k < keys.length; k++) {
+              totals[keys[k]] += sc[keys[k]] || 0;
+            }
+          }
+
+          var results = [];
+          for (var k = 0; k < keys.length; k++) {
+            var key = keys[k];
+            var pct =
+              maxScores[key] > 0
+                ? Math.round((totals[key] / maxScores[key]) * 100)
+                : 0;
+            results.push({
+              key: key,
+              label: LABELS[key],
+              score: totals[key],
+              max: maxScores[key],
+              pct: pct,
+            });
+          }
+
+          results.sort(function (a, b) {
+            return b.pct - a.pct;
+          });
+          return results;
+        }
+
+        function renderResults() {
+          var results = calculateResults();
+          var top = results[0];
+          var data = RESULT_DATA[top.key];
+
+          topResultEl.innerHTML =
+            '<div class="top-badge">Unsere Empfehlung</div>' +
+            "<h3>" +
+            top.label +
+            "</h3>" +
+            '<div class="top-percent">' +
+            top.pct +
+            " %</div>" +
+            '<div class="top-bar-track"><div class="top-bar-fill" id="topBarFill"></div></div>' +
+            '<div class="top-why">' +
+            data.why +
+            "</div>" +
+            '<div class="pros-cons">' +
+            "<div>" +
+            '<h4 class="pro-title">Vorteile</h4>' +
+            '<ul class="pro-list">' +
+            data.pros
+              .map(function (p) {
+                return "<li>" + p + "</li>";
+              })
+              .join("") +
+            "</ul>" +
+            "</div>" +
+            "<div>" +
+            '<h4 class="con-title">Nachteile</h4>' +
+            '<ul class="con-list">' +
+            data.cons
+              .map(function (c) {
+                return "<li>" + c + "</li>";
+              })
+              .join("") +
+            "</ul>" +
+            "</div>" +
+            "</div>";
+
+          otherResultsEl.innerHTML = "";
+          for (var i = 1; i < results.length; i++) {
+            var r = results[i];
+            var accentClass = ACCENT_CLASSES[i - 1] || "accent-2";
+            var item = document.createElement("div");
+            item.className = "other-item";
+            item.innerHTML =
+              '<div class="other-rank">' +
+              (i + 1) +
+              "</div>" +
+              '<div class="other-info">' +
+              '<div class="other-name">' +
+              r.label +
+              "</div>" +
+              '<div class="other-bar-track"><div class="other-bar-fill ' +
+              accentClass +
+              '" data-pct="' +
+              r.pct +
+              '"></div></div>' +
+              "</div>" +
+              '<div class="other-pct">' +
+              r.pct +
+              " %</div>";
+            otherResultsEl.appendChild(item);
+          }
+
+          // Animate bars after render
+          requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+              var topBar = document.getElementById("topBarFill");
+              if (topBar) topBar.style.width = top.pct + "%";
+              var fills = otherResultsEl.querySelectorAll(".other-bar-fill");
+              for (var j = 0; j < fills.length; j++) {
+                fills[j].style.width = fills[j].getAttribute("data-pct") + "%";
+              }
+            });
+          });
+        }
+
+        // Event listeners
+        startBtn.addEventListener("click", function () {
+          currentQuestion = 0;
+          progressWrap.style.display = "block";
+          showScreen(questionScreen);
+          renderQuestion();
+        });
+
+        nextBtn.addEventListener("click", function () {
+          if (userAnswers[currentQuestion] === undefined) return;
+          if (currentQuestion < TOTAL - 1) {
+            currentQuestion++;
+            showScreen(questionScreen);
+            renderQuestion();
+          } else {
+            progressWrap.style.display = "none";
+            showScreen(resultScreen);
+            renderResults();
+          }
+        });
+
+        backBtn.addEventListener("click", function () {
+          if (currentQuestion > 0) {
+            currentQuestion--;
+            showScreen(questionScreen);
+            renderQuestion();
+          } else {
+            progressWrap.style.display = "none";
+            showScreen(welcomeScreen);
+          }
+        });
+
+        restartBtn.addEventListener("click", function () {
+          currentQuestion = 0;
+          userAnswers = [];
+          progressWrap.style.display = "none";
+          showScreen(welcomeScreen);
+        });
+
+        // Keyboard nav for answers
+        document.addEventListener("keydown", function (e) {
+          if (!questionScreen.classList.contains("active")) return;
+          var btns = qAnswers.querySelectorAll(".answer-btn");
+          if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+            e.preventDefault();
+            var focused = document.activeElement;
+            var idx = -1;
+            for (var i = 0; i < btns.length; i++) {
+              if (btns[i] === focused) {
+                idx = i;
+                break;
+              }
+            }
+            if (e.key === "ArrowDown") idx = (idx + 1) % btns.length;
+            else idx = (idx - 1 + btns.length) % btns.length;
+            btns[idx].focus();
+          }
+          if (
+            e.key === "Enter" &&
+            !nextBtn.disabled &&
+            document.activeElement !== nextBtn &&
+            document.activeElement !== backBtn
+          ) {
+            nextBtn.click();
+          }
+        });
+      })();
     </script>
-</body>
+  </body>
 </html>
